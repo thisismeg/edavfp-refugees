@@ -19,7 +19,7 @@ write.csv(CrisesOriginRefugees,'CrisesOrigin.csv')
 # Where refugees are going now
 LDRefugeeCountries <- c("Turkey", "Jordan", "Pakistan", "Lebanon","Iran", "Ethiopia", "Sudan", "Kenya", "Dem. Rep. of the Congo", "Chad", "Bangladesh")
 MDRefugeeCountries <- c("Germany", "Sweden")
-LargestPoplnInWorld <- c("India", "China", "United States of America") 
+#LargestPoplnInWorld <- c("India", "China", "United States of America") 
 MediterranianCountries <- c("Greece", "Italy")
 
 RefugeeCountries <- Refugees %>%
