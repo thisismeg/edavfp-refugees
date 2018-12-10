@@ -5,24 +5,280 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
 ```
 
-## R Markdown
+### Fall 2018 EDAV Final Project
+# The Global Refugee Crisis
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## 1. Introduction
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Our project is on the Global Refugee Crisis, with a primary focus on the 5 major current refugee events in Afghanistan, the Democratic Republic of Congo, Myanmar, South Sudan and the Syrian Arab Republic. 
 
-```{r cars}
-summary(cars)
+### 1.1 Why we chose this topic
+
+We decided to embark on this project for several reasons. The primary reason is that the global refugee crisis is the major humanitarian crisis of our times: the refugee population increased by almost 3 million from 2016 to 2017 alone. Adding to this problem is the unfriendly political climate surrounding refugee inflows, especially with the rise of right-wing nationalism in the Western world. Most countries simply adopt a "not in my backyard" mentality as these crises occur far away from them and their occurrence does not threaten the stability and peace in their region. 
+
+We also often read of terrible, inhumane conditions in refugee camps and boats of refugees that survived the treacherous journey through the Mediterranean Sea being turned back and denied their legal right to assistance. Thus, in this project, we wanted to look at data that described and would hopefully shed more light on this crisis.
+
+### 1.2 Questions we were interested in studying:
+* Where are refugees mostly originating from and what kind of events occurred to make them leave?
+  + What are the historical events that led to this current outflow?
+* Which are the countries taking in the most refugees, and why?
+  + Are refugee outflows equitably distributed in the world?
+  + Why are some other countries not taking in refugees?
+* Which demographic segment of the population are affected by these crisis?
+
+### 1.3 Group members and distribution of work
+We split the data cleaning evenly, each taking 2 csv files for cleaning and the initial exploratory data analysis. After that, we decided on the events and subsets to focus on for our project collectively. We also split the components of the reports and presentations equally.
+
+The data visualization component was divided as following:
+
+* Megala Kannan: Interactive line chart
+* Nanshan Li: Alluvial diagram and demographic bar charts
+* Pranav Alva: Generating choroplethR maps and combining the maps into our interactive component.
+
+## 2 Description of data
+
+The data for this project was collected from the [Office of the United Nations High Commissioner of Refugees (UNHCR)](http://popstats.unhcr.org). The database currently contains data about UNHCR's populations of concern from the year 1951 up to 2017. The population of concern includes the following 6 categories – Refugees, Asylum Seekers, Internally displaced persons, returned refugees, returned IDP’s, stateless persons and others of concern. This data was used to investigate different aspects of these populations: their general composition by location of residence or origin, their status (refugees, asylum seekers, internally displaced persons, etc.), their numbers over time, and so on.
+
+The data was collected in the form of 6 files (.csv) by selecting the subset of data we were interested in. All data was collected for the years 1951 – 2017. This includes:
+1.	Persons of concern: UNHCR's populations of concern for a given year and country of residence and/or origin.
+2.	Time series: The total persons of concerns data represented as a time series.
+3.	Demographics: Information about persons of concern broken down by sex and age, as well as by location within the country of residence 
+4.	Asylum seekers (Refugee status determination):  Information about asylum applications in a given year and the progress of asylum-seekers through the refugee status determination process.
+5.	Asylum seekers (monthly data): Asylum seekers data broken down by month and origin.
+6.	Resettlement:  Information on resettlement arrivals of refugees, with or without UNHCR assistance.
+
+## 3 Data quality
+
+The data only included values up to mid-2017, and hence is not complete for the year 2017. Additionally, there were many fields that were filled with asterisks. According to the metadata from UNCHR, these represent situations in which figures are being kept confidential to protect the anonymiy of individuals. An example of the asterisks in the data can be seen below. There were also fields in which no figures were available. We coded all these values to 0. We also needed to rename the columns in order to work on the data in several of our csv files.
+ 
+```{r Asylum seekers}
+un <- read.csv('./Data/unhcr_popstats_export_asylum_seekers_all_data.csv', skip = 3, header = TRUE)
+tail(un)
 ```
 
-## Including Plots
+This was the main dataframe on which most of our visualizations were based on. The data has 5 variables.
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r Asylum seekers}
+timeseries <- read.csv('./Data/unhcr_popstats_export_time_series_all_data.csv', skip = 3, header = TRUE)
+tail(timeseries)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Another dataframe on which a part of our visualizations were on was the demographic data collected by UNHCR from 2001-2017. For the demographic data, the organization collected the population numbers of those aged 5-17 in a single category before 2011, and as two categories (5-11 and 12-17) from 2011 and after. Within countries, the demographic data is further split into more specific location names, although the data collection was not consistent and many location names only appear once in the entire dataframe.
+
+```{r Asylum seekers}
+dem <- read.csv('./Data/unhcr_popstats_export_demographics_all_data.csv', skip = 3, header = TRUE)
+tail(dem)
+```
+
+There are 18538 rows in the dataframe, and 6223 unique location names. 
+
+```{r}
+length(unique(dem$Location.Name))
+```
+
+# 4 Main Analysis (Exploratory Data Analysis)
+
+## 4.1 Initial Exploration
+
+We started out by exploring the different datasets on our own through Q3 in Homework 4. The 3 datasets we explored were time series (Pranav), asylum seekers (Megala) and resettlement data (Nanshan).
+
+### 4.1.1 Time series
+
+The following shows a plot of the overall population of persons of concern. There are almost 50 million of them in 2016, with a dip in 2017 due to the fact that the data only goes up to mid-2017.
+
+``` {r}
+# Filtering out the rows for which the populations are confidential
+timeseries <- timeseries %>% filter(Value != "*")
+timeseries$Value <- as.numeric(timeseries$Value)
+
+g2<-ggplot(timeseries, aes(x = Year, y = Value)) + geom_col(fill='lightblue') +
+    ggtitle("Population of persons of concern by year (1951-2017[mid])") +
+  xlab("Years") +
+  ylab("# of Persons of Concern")
+g2
+```
+
+A cleveland dot plot of the countries with the largest refugee populations in 2016 was plotted, showing that the countries were Canada, USA, Germany, United Kingdom, Sweden and so on.
+
+```{r fig.height = 15}
+colnames(timeseries)[colnames(timeseries) == 
+                     "Country...territory.of.asylum.residence"] <- "Country_of_Asylum"
+
+
+theme_dotplot <- theme_bw(18) +
+    theme(axis.text.y = element_text(size = rel(.75)),
+          axis.ticks.y = element_blank(),
+          axis.title.x = element_text(size = rel(.75)),
+          panel.grid.major.x = element_blank(),
+          panel.grid.major.y = element_line(size = 0.5),
+          panel.grid.minor.x = element_blank())
+
+timeseries2 <- timeseries %>% 
+  group_by(Country_of_Asylum) %>% 
+  filter(Year == "2016") %>% 
+  summarize(Value=sum(Value)) %>% 
+  arrange(desc(Value)) %>% 
+  head(n=50)
+
+cplot<-ggplot(timeseries2, aes(x = Value, y = fct_reorder(Country_of_Asylum, Value))) +
+    geom_point(color = "blue") + 
+  ylab("Country_of_Asylum") + 
+  xlab("# of Persons of Concern") +
+  theme_dotplot + theme(axis.text=element_text(size=13),
+                         axis.title=element_text(size=13)) + 
+  ggtitle("Countries with the highest refugee populations in 2016") + 
+  theme(plot.title = element_text(size = 20))
+cplot
+```
+
+From the chart below, the top 50 countries from which persons of concern originate from in 2016 are Syria, Dem Rep. of the Congo, Somalia, Iraq and Afghanistan.
+
+``` {r fig.height = 15}
+timeseries3 <- timeseries %>% 
+  group_by(Origin) %>% 
+  filter(Year == 2016) %>% 
+  summarize(Value=sum(Value)) %>% 
+  arrange(desc(Value)) %>% 
+  head(n=50)
+
+cplot<-ggplot(timeseries3, aes(x = Value, y = fct_reorder(Origin, Value))) +
+    geom_point(color = "blue") + 
+  ylab("Country of Origin") + 
+  xlab("# of Persons of Concern") +
+  theme_dotplot + 
+  theme(axis.text=element_text(size=12),
+                         axis.title=element_text(size=13)) + 
+  ggtitle("Top 50 Countries of Origin (2016)") + 
+  theme(plot.title = element_text(size = 20))
+cplot
+```
+
+### 4.1.2 Asylum seekers data
+
+Next, we encoded the data from asylum seekers. The following chart shows the proportion and absolute numbers of refugees accorded refugee status by either the host government, UNHCR or both the government and UNHCR. The numbers are steadily increasing over the years.
+
+```{r}
+# fill missing values to 0
+un[is.na(un)] <- 0
+#View(un)
+split <- un %>% separate(RSD.procedure.type...level, c("type", "level"))
+un <- un %>% mutate(type = split$type) %>% mutate( level = split$level)
+ggplot(un, aes(x= Year)) +
+      geom_bar(aes(fill = factor(type))) +
+      scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9", "black"), 
+                       name="Type of Refugee status determination",
+                       breaks=c("G", "J", "U"),
+                       labels=c("Government", "Joint", "UN")) +
+      ggtitle("RSD by Year")
+
+```
+
+The following Cleveland dot plot shows the number of refugees from different origin countries accorded different statuses by either the government or the UN. Similar countries with the highest number of refugees seeking asylum are observed, and there are proportionately more asylum seekers being awarded their status by governments rather than the UN.
+
+``` {r fig.height = 15}
+un_plot <- un %>% group_by(Origin) %>% summarize(UNHCR= sum(type == "U"), GOV= sum(type=="G"))
+#View(un_plot)
+new_un <- un_plot %>% gather(key="TOTAL", value="type", -Origin)
+#View(new_un)
+ggplot(new_un, aes(x= type, y= reorder(Origin,type) , color= TOTAL)) + 
+      geom_point() + ylab("Origin Country") + xlab("count") + 
+      ggtitle("RSD count by Origin")
+
+```
+
+### 4.1.3 Resettlement Data
+
+The last dataset that we looked at for the initial exploratory stage was resettlment of refugees, either back to their origin country or to a different asylum country. 
+
+``` {r}
+
+resettlement <- read.csv('./Data/unhcr_popstats_export_resettlement_all_data.csv', header = TRUE, skip = 3)
+                         
+colnames(resettlement)[colnames(resettlement) == 
+                         "Country...territory.of.asylum.residence"] <- "Country_of_asylum"
+
+resettlement <- resettlement %>% filter(Value != "*")
+resettlement$Value <- as.numeric(resettlement$Value)
+
+resettlement_bycountry <- resettlement %>%
+  group_by(Country_of_asylum, Year) %>%
+  summarise(Value = sum(Value)) %>%
+  filter(Year == 2016) %>%
+  arrange(desc(Value))
+
+resettlement_bycountry
+```
+
+The top 5 countries from this list were noted down and saved to an array, and used to subset the data so that the time series for this special subset of refugees can be plotted in a line chart
+
+``` {r warnings = FALSE}
+topcountries <- c("Australia", "United States of America", "Canada", 
+                  "New Zealand", "Sweden")
+
+resettlement_bycountry <- resettlement %>%
+  group_by(Country_of_asylum, Year) %>%
+  summarise(Value = sum(Value))
+
+resettlement_bycountry_subset <- resettlement_bycountry %>%
+  filter(Country_of_asylum %in% topcountries)
+
+ggplot(resettlement_bycountry_subset, aes(x = Year, y = Value, col = Country_of_asylum)) + 
+  geom_line(size = 1) +
+  scale_x_continuous(limits=c(1982,2016)) + 
+  ggtitle('Top 5 countries in which refugees resettle over 1982 to 2016') +
+  ylab('Number of people')
+
+```
+
+``` {r}
+resettlement_byorigin <- resettlement %>%
+  group_by(Origin, Year) %>%
+  summarise(Value = sum(Value))
+
+resettlement_byorigin_subset <- resettlement_byorigin %>%
+  group_by(Origin) %>%
+  filter(Year == 2016) %>%
+  summarise(Value = sum(Value)) %>%
+  arrange(desc(Value))
+
+resettlement_byorigin_subset
+```
+
+The graph below allows us to visualize the trends in the origin country of resettling refugees over the years.
+
+``` {r}
+top10countries <- c("Syrian Arab Rep.", "Eritrea", "Iraq", "Dem. Rep. of the Congo", "South Sudan", "Somalia", "Burundi", "Ethiopia", "Sudan", "Central African Rep.")
+
+resettlement_byorigin_subset <- resettlement_byorigin %>%
+  filter(Origin %in% top10countries)
+
+ggplot(resettlement_byorigin_subset, aes(x = Year, y = Value, col = Origin)) +
+  geom_line(size = 0.8) + 
+  ggtitle('Top 10 countries in which resettling refugees originate from (1959 - 2017)') +
+  ylab('Number of people')
+```
+
+## 4.2 Subsetting data for further analysis
+
+Upon looking at the results from our initial exploration, we realized that we had to to subset our data in order to obtain meaningful visualizations from it. There were simply too many possible permutations of origin and asylum country for there to be any conclusions drawn without retrieving a smaller subset of the data. 
+
+We did the subsetting using the time series data, as it was the most complete form of the persons of concern population in all 6 datasets. 5 current events were selected and used to base our further analysis on. We chose to include 3 population types: "Refugees", "Asylum-seekers" (essentially with pending refugee status) and "Internally displaced persons", as many people from countries with conflict are usually first internally displaced before deciding to head to a different country and becoming asylum seekers / refugees.
+
+``` {r}
+# Where refugees are coming from
+CrisesOriginCountries <- c("Syrian Arab Rep.", "South Sudan", "Afghanistan", "Dem. Rep. of the Congo", "Myanmar")
+
+CrisesOriginRefugees <- timeseries %>%
+  filter(Origin %in% CrisesOriginCountries) %>%
+  filter(Population.type %in% c("Refugees (incl. refugee-like situations)","Asylum-seekers", "Internally displaced persons")) 
+
+#write.csv(CrisesOriginRefugees,'CrisesOrigin.csv')
+```
+
+The countries were chosen both for their prominence in their regions as well as the volume of refugees from those countries. The 5 countries we decided to base the second phase of our project on were Syria, South Sudan, Afghanistan, Democratic Republic of Congo and Myanmar. 
+
+## 4.3 
+
