@@ -1,0 +1,38 @@
+Went there for safety:
+- refugees
+- asylum-seekers
+
+Conflict in own country:
+- IDPs
+
+
+
+
+// We are not doing enough for refugees **
+refugees: definition
+refugee numbers, where they come from 	
+	recent crises
+		* Syrian war
+Syrian Crisis: Refugees and Asylum seekers from there (2000 - now)
+		* South Sudan (government collapse)
+		* Afghanistan (Taliban)
+		* DR Congo
+		* Somalia
+Armed conflict, drought, natural hazards...
+	** ridgeline of them being displaced internally (IDP) 
+
+Where are they going?
+	** alluvial
+
+What about the rich countries?????
+	** turkey vs us time series
+-- turning them back, picture of trump, refugee detention centers
+foreign policy***
+	chloropleth:  
+
+** Fancy interactive chloropleth r
+
+# populations (in millions)
+permutate colors
+
+

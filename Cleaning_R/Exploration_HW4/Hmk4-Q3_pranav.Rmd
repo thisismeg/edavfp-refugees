@@ -1,0 +1,87 @@
+---
+title: "Homework #4"
+author: "Pranav Alva"
+UNI: "pa2541"
+date: "11/14/2018"
+output: html_document
+---
+
+```{r echo=TRUE, plot=TRUE, warning=FALSE, results='hide', message=FALSE}
+library("ggplot2")
+library("knitr")
+library("cluster")
+library("tidyverse")
+library("dplyr")
+library("extracat")
+setwd("E:/Work/Applications/Schools/Columbia/Coursework/EDAV/Assignment/Assignment 4")
+df<-read.csv(file="unhcr_popstats_export_time_series_all_data.csv", header=TRUE, sep=",")
+df<-as.tbl(df)
+```
+
+### Refugee/Asylum Seeking Populations in Countries around the World .1951-2017[mid]
+
+Source: United Nations High Commissioner for Refugees (UNHCR)
+
+Variable Selected: "Value" (# of people) 
+
+(a) Visualization 1
+
+```{r echo=TRUE, plot=TRUE, warning=FALSE, results='hide', message=FALSE, fig.width=12}
+# Filtering out the rows for which the populations are confidential
+df <- df %>% filter(Value != "*")
+df$Value <- as.numeric(df$Value)
+
+g2<-ggplot(df, aes(x = Year, y = Value)) + geom_col(fill='lightblue') +
+    ggtitle("Refugee/Asylum Seeking Populations By Year (1951-2017[mid]") +
+  xlab("Years") +
+  ylab("# of Refugees/Asylum Seekers")
+g2
+```
+
+#####Observations
+#####1) We observe an increasing trend in the number of refugees and people seeking asylum across the years
+#####2) The dip in 2017 can be attributed to the fact that the data was collected only till mid 2017 and thus is not a true representation of the actual figures
+#####3) There is a sharp increase in these numbers from the year 1999 to 2000 which is an interesting occurance to investigate
+
+(b) Visualization 2
+
+```{r echo=TRUE, plot=TRUE, warning=FALSE, results='hide', message=FALSE, fig.height=20, fig.width=12}
+theme_dotplot <- theme_bw(18) +
+    theme(axis.text.y = element_text(size = rel(.75)),
+          axis.ticks.y = element_blank(),
+          axis.title.x = element_text(size = rel(.75)),
+          panel.grid.major.x = element_blank(),
+          panel.grid.major.y = element_line(size = 0.5),
+          panel.grid.minor.x = element_blank())
+
+df2 <- df %>% group_by(Country_of_asylum) %>% summarize(Value=sum(Value)) %>% arrange(desc(Value)) %>% head(n=100)
+
+cplot<-ggplot(df2, aes(x = Value, y = fct_reorder(Country_of_asylum, Value))) +
+    geom_point(color = "blue") + ylab("Country of Asylum") + xlab("# of Refugees/Asylum Seekers") +
+  theme_dotplot + theme(axis.text=element_text(size=13),
+                         axis.title=element_text(size=13)) + ggtitle("Top 100 Countries of Residence (1951-2017[mid])") + theme(plot.title = element_text(size = 20))
+cplot
+```
+
+#####Observations
+#####1) United State and Canada have the highest populations of refugees and asylum seekers by a distance
+#####2) European Nations of Sweden, Germany and Netherlands are also found to have high refugee populations
+#####3) It would be interesting to see the composition of these populations based on their origins and refugee status
+
+(c) Visualization 3
+
+```{r echo=TRUE, plot=TRUE, warning=FALSE, results='hide', message=FALSE, fig.height=20, fig.width=12}
+df3 <- df %>% group_by(Origin) %>% summarize(Value=sum(Value)) %>% arrange(desc(Value)) %>% head(n=100)
+
+cplot<-ggplot(df3, aes(x = Value, y = fct_reorder(Origin, Value))) +
+    geom_point(color = "blue") + ylab("Country of Origin") + xlab("# of Refugees/Asylum Seekers") +
+  theme_dotplot + theme(axis.text=element_text(size=12),
+                         axis.title=element_text(size=13)) + ggtitle("Top 100 Countries of Origin (1951-2017[mid])") + theme(plot.title = element_text(size = 20))
+cplot
+```
+
+#####Observations
+#####1) There are a large number of Refugees/Asylum Seekers who's country of origin is unknown
+#####2) The Dominican Republic of Congo, Iraq and Somalia are the homes to the highest number of Refugee/Asylum Seekers by a significant margin
+#####3) It would be interesting to observe the countries of residence and the types of refugees coming from these countries
+#####4) Further we can look for events over the year than have led to such largescale displacement of populations

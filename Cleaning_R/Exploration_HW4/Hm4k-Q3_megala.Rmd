@@ -1,0 +1,75 @@
+---
+title: "Hm4k-Q3"
+author: "Megala Kannan msk2245"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(comment = NA)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+**Population Statistics for Asylum seekers**
+
+The variable being examined here is RSD_type_or_level. This is the Refusee seeker determination variable. It has 2 parts, the type of refugee status determination procedure, which are in 3 main categories- G:Government, U:UNHCR, J: Joint. The second variable is the level in the procedure. Which has 16 categories based on how much progress has been made.
+
+**1)** The first graph gives us the split up of refugees in each level of procedure. This is divided based on their type. We can observe that the level FI( First Instance) has the highest count by a large margin. This shows that a large number of applications has still not progressed beyond the first stage. Most of these are handled by the government while a small poriton is handled by UNHCR and a neglidgeble amount by both. The second highest category is admin review. Most of the levels are handled by the government while only 4 levels (the beggining stages) is handled by the UNHCR.
+
+**2)** This graph gives us the total refugee status determined across the 17 years, as we can clearly see the number of refugees identified have steadily been increasing. The number of refugees taken in by each procedure has also increased with the Government having the highest count in all years. The joint forces have also increased its procedures in the later years. 2015 has the highest number of refugees followed by 2016 and 2017
+
+**3)** This graph gives us the RSD type and level for each origin country. It is ordered based on the type of procedure used. We can see that several countries have 0 refugees leaving their nation. Countries like iraq, Somalia, Dem Rep of COngo have the highest number of refugees. The total count of refugees taken up by the UNHCR is close to 750 while total count taken up by the government is 2000
+
+These graphs and statistics can be further used to determine which countries had the highest outflow of refugees and which had the highest inflow. The assistance provided by the UNHCR and the Government for these refugees can be compared acrossed different countries. We can infer as to what could have been the cause/reason for the asylum seekers to have left their regions, by looking for incidents that may have occured in those areas in the given particular years.
+
+
+```{r}
+library("tidyverse")
+library("vcd")
+un <- read.csv(file= "/Users/megalakannan/Documents/EDAV/EdavProject/unhcr_popstats_export_asylum_seekers_all_data.csv")
+un[is.na(un)] <- 0
+#View(un)
+split <- un %>% separate(RSD_type_or_level, c("type", "level"))
+un <- un %>% mutate(type = split$type) %>% mutate( level = split$level)
+ggplot(un, aes(x=level)) +
+      geom_bar(aes(fill = type))+
+      scale_fill_manual(values = c("red","yellow","blue"),
+                       name="Type of Refugee status determination",
+                       breaks=c("G", "J", "U"),
+                       labels=c("Government", "Joint", "UN")) +
+      ggtitle("RSD level vs Type")
+ggplot(un, aes(x= Year)) +
+      geom_bar(aes(fill = type)) +
+      scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"), 
+                       name="Type of Refugee status determination",
+                       breaks=c("G", "J", "U"),
+                       labels=c("Government", "Joint", "UN")) +
+      ggtitle("RSD by Year")
+
+     
+
+
+
+```
+```{r fig.height = 20}
+library("tidyverse")
+library("vcd")
+un <- read.csv(file= "/Users/megalakannan/Documents/EDAV/EdavProject/unhcr_popstats_export_asylum_seekers_all_data.csv")
+un[is.na(un)] <- 0
+#View(un)
+split <- un %>% separate(RSD_type_or_level, c("type", "level"))
+un <- un %>% mutate(type = split$type) %>% mutate( level = split$level)
+un_plot <- un %>% group_by(Origin) %>% summarize(UNHCR= sum(type == "U"), GOV= sum(type=="G"))
+#View(un_plot)
+new_un <- un_plot %>% gather(key="TOTAL", value="type", -Origin)
+#View(new_un)
+ggplot(new_un, aes(x= type, y= reorder(Origin,type) , color= TOTAL)) + 
+      geom_point() + ylab("Origin Country") + xlab("count") + 
+      ggtitle("RSD count by Origin")
+
+```
+
+
+
