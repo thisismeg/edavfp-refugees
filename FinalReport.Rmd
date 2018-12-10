@@ -555,3 +555,8 @@ drc_variable <-ggplot(dem_congo_sum, aes(x = center, y = number / binwidth, widt
 grid.arrange(drc_stack, drc_fill, drc_variable)
 ```
 
+## 5 Executive Summary 
+
+## 6 Interactive Component
+
+## 7 Conclusion
