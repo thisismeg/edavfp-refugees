@@ -344,7 +344,47 @@ dem_long <- dem_long %>%
 dem_long$number[is.na(dem_long$number)] <- 0
 ```
 
-Through exploring 
+Through exploring the demographic data for all 5 countries we picked, we realised that the data was extremely incomplete and the collection methods seemed to be lacking. For example, in the chart for Syria, a decrease in the number of persons of concern across all categories can be observed. However, from the other datasets, we know that that is not the case. A closer inspection reveals that the data was obtained through sampling at different local locations, and the locations at which this demographic sampling was done was not consistent across the years. The conflict worsening could possibly have resulted in less samples being taken, and hence a less accurate representation of the population numbers. 
+
+#### Syria Arab Republic
+
+``` {r fig.height = 7}
+### Syria
+# Cleaning for Syria
+dem_syria <- dem_long %>%
+  filter(Country == 'Syrian Arab Rep.') %>% 
+  filter(Year >= 2011 & Year <= 2017) %>%
+  filter(dem.sex %in% c("Female","Male")) %>%
+  group_by(Country, Year, dem.sex, dem.age) %>%
+  summarise(number = sum(number))
+
+# The age 5-17 category was not used in tracking persons of concern from South Sudan
+dem_syria<-dem_syria[!(dem_syria$dem.age =="5-17"),]
+
+# Reordering the factor categories
+dem_syria$dem.age <- factor(dem_syria$dem.age, levels = c("0-4", "5-11", "12-17", "18-59", "60+"))
+
+# Failed bar plot
+syria_stack <- ggplot(dem_syria, aes(x = factor(Year), y = number / 1000)) +
+  geom_bar(aes(fill = dem.age),stat = "identity", position = "stack") +
+  facet_wrap(.~dem.sex) +
+  xlab('Year') +
+  ylab('Population of Persons of Concern (in thousands)') +
+  ggtitle('Demographic breakdown of persons of concern in Syrian Arab Republic')
+
+# Failed bar plot (proportions)
+syria_fill <- ggplot(dem_syria, aes(x = factor(Year), y = number / 1000)) +
+  geom_bar(aes(fill = dem.age),stat = "identity", position = "fill") +
+  facet_wrap(.~dem.sex) +
+  xlab('Year') +
+  ylab('Proportion of total population') +
+  ggtitle('Demographic breakdown of persons of concern in Syrian Arab Republic')
+
+grid.arrange(syria_stack, syria_fill)
+
+```
+
+Out of the 5 countries we looked at, South Sudan seemed to have the most complete demographic data, with about 260,000 persons out of 400,000 for which there was demographic data on. As such, it is the only demographic graph we are choosing to include in our executive summary.
 
 #### South Sudan
 ```{r fig.height = 10}
@@ -403,43 +443,7 @@ sudan_variable <- ggplot(dem_sudan_sum, aes(x = center, y = number / binwidth, w
 grid.arrange(sudan_stack, sudan_fill, sudan_variable)
 ```
 
-#### Syria Arab Republic
 
-``` {r fig.height = 7}
-### Syria
-# Cleaning for Syria
-dem_syria <- dem_long %>%
-  filter(Country == 'Syrian Arab Rep.') %>% 
-  filter(Year >= 2011 & Year <= 2017) %>%
-  filter(dem.sex %in% c("Female","Male")) %>%
-  group_by(Country, Year, dem.sex, dem.age) %>%
-  summarise(number = sum(number))
-
-# The age 5-17 category was not used in tracking persons of concern from South Sudan
-dem_syria<-dem_syria[!(dem_syria$dem.age =="5-17"),]
-
-# Reordering the factor categories
-dem_syria$dem.age <- factor(dem_syria$dem.age, levels = c("0-4", "5-11", "12-17", "18-59", "60+"))
-
-# Failed bar plot
-syria_stack <- ggplot(dem_syria, aes(x = factor(Year), y = number / 1000)) +
-  geom_bar(aes(fill = dem.age),stat = "identity", position = "stack") +
-  facet_wrap(.~dem.sex) +
-  xlab('Year') +
-  ylab('Population of Persons of Concern (in thousands)') +
-  ggtitle('Demographic breakdown of persons of concern in Syrian Arab Republic')
-
-# Failed bar plot (proportions)
-syria_fill <- ggplot(dem_syria, aes(x = factor(Year), y = number / 1000)) +
-  geom_bar(aes(fill = dem.age),stat = "identity", position = "fill") +
-  facet_wrap(.~dem.sex) +
-  xlab('Year') +
-  ylab('Proportion of total population') +
-  ggtitle('Demographic breakdown of persons of concern in Syrian Arab Republic')
-
-grid.arrange(syria_stack, syria_fill)
-
-```
 
 ## 5 Executive Summary 
 
