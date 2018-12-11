@@ -11,6 +11,9 @@ library(tidyverse)
 ### Fall 2018 EDAV Final Project
 # The Global Refugee Crisis
 
+#### *Github link to Project* 
+https://github.com/nanshanli/edavfp-refugees
+
 ## 1. Introduction
 
 Our project is on the Global Refugee Crisis, with a primary focus on the 5 major current refugee events in Afghanistan, the Democratic Republic of Congo, Myanmar, South Sudan and the Syrian Arab Republic. 
@@ -40,15 +43,15 @@ The data visualization component was divided as following:
 
 ## 2 Description of data
 
-The data for this project was collected from the [Office of the United Nations High Commissioner of Refugees (UNHCR)](http://popstats.unhcr.org). The database currently contains data about UNHCR's populations of concern from the year 1951 up to 2017. The population of concern includes the following 6 categories – Refugees, Asylum Seekers, Internally displaced persons, returned refugees, returned IDP’s, stateless persons and others of concern. This data was used to investigate different aspects of these populations: their general composition by location of residence or origin, their status (refugees, asylum seekers, internally displaced persons, etc.), their numbers over time, and so on.
+The data for this project was collected from the [Office of the United Nations High Commissioner of Refugees (UNHCR)](http://popstats.unhcr.org). The database currently contains data about UNHCR's populations of concern from the year 1951 up to 2017. The population of concern includes the following 6 categories: Refugees, Asylum Seekers, Internally displaced persons, returned refugees, returned IDPs, stateless persons and others of concern. This data was used to investigate different aspects of these populations: their general composition by location of residence or origin, their status (refugees, asylum seekers, internally displaced persons, etc.), their numbers over time, and so on.
 
-The data was collected in the form of 6 files (.csv) by selecting the subset of data we were interested in. All data was collected for the years 1951 – 2017. This includes:
-1.	Persons of concern: UNHCR's populations of concern for a given year and country of residence and/or origin.
-2.	Time series: The total persons of concerns data represented as a time series.
-3.	Demographics: Information about persons of concern broken down by sex and age, as well as by location within the country of residence 
-4.	Asylum seekers (Refugee status determination):  Information about asylum applications in a given year and the progress of asylum-seekers through the refugee status determination process.
-5.	Asylum seekers (monthly data): Asylum seekers data broken down by month and origin.
-6.	Resettlement:  Information on resettlement arrivals of refugees, with or without UNHCR assistance.
+The data was collected in the form of 6 files (.csv) by selecting the subset of data we were interested in. All data was collected for the years 1951 to 2017. This includes:
+1. Persons of concern: UNHCR's populations of concern for a given year and country of residence and/or origin.
+2. Time series: The total persons of concerns data represented as a time series.
+3. Demographics: Information about persons of concern broken down by sex and age, as well as by location within the country of residence 
+4. Asylum seekers (Refugee status determination):  Information about asylum applications in a given year and the progress of asylum-seekers through the refugee status determination process.
+5. Asylum seekers (monthly data): Asylum seekers data broken down by month and origin.
+6. Resettlement:  Information on resettlement arrivals of refugees, with or without UNHCR assistance.
 
 ## 3 Data quality
 
@@ -344,7 +347,68 @@ dem_long <- dem_long %>%
 dem_long$number[is.na(dem_long$number)] <- 0
 ```
 
-Through exploring the demographic data for all 5 countries we picked, we realised that the data was extremely incomplete and the collection methods seemed to be lacking. For example, in the chart for Syria, a decrease in the number of persons of concern across all categories can be observed. However, from the other datasets, we know that that is not the case. A closer inspection reveals that the data was obtained through sampling at different local locations, and the locations at which this demographic sampling was done was not consistent across the years. The conflict worsening could possibly have resulted in less samples being taken, and hence a less accurate representation of the population numbers. 
+The demographic data was inconsistent in the method of data collection as well as the values. This was evident in 4 of the countries we looked at, with the exception of South Sudan.
+
+We decided to plot absolute values, relative values (to visualize the changes in proportions over the years) and a variable width bar chart for an accurate representation of the actual distribution across ages and sex.
+
+#### South Sudan
+```{r fig.height = 10}
+# Cleaning for Sudan
+dem_sudan <- dem_long %>%
+  filter(Country == 'South Sudan') %>% 
+  filter(Year >= 2011 & Year <= 2017) %>%
+  filter(dem.sex %in% c("Female","Male")) %>%
+  group_by(Country, Year, dem.sex, dem.age) %>%
+  summarise(number = sum(number))
+
+# The age 5-17 category was not used in tracking persons of concern from South Sudan
+dem_sudan<-dem_sudan[!(dem_sudan$dem.age =="5-17"),]
+
+# Reordering the factor categories
+dem_sudan$dem.age <- factor(dem_sudan$dem.age, levels = c("0-4", "5-11", "12-17", "18-59", "60+"))
+
+# Demographic bar chart
+sudan_stack <- ggplot(dem_sudan, aes(x = factor(Year), y = number / 1000)) +
+  geom_bar(aes(fill = dem.age),stat = "identity", position = "stack") +
+  facet_wrap(.~dem.sex) +
+  xlab('Year') +
+  ylab('Population (in thousands)') +
+  ggtitle('Demographic breakdown of persons of concern in South Sudan') +
+  scale_fill_discrete(name = "Age Category")
+
+# Demographic bar chart
+sudan_fill <- ggplot(dem_sudan, aes(x = factor(Year), y = number / 1000)) +
+  geom_bar(aes(fill = dem.age),stat = "identity", position = "fill") +
+  facet_wrap(.~dem.sex) +
+  xlab('Year') +
+  ylab('Proportion of total population') +
+  ggtitle('Demographic breakdown of persons of concern in South Sudan') +
+  scale_fill_discrete(name = "Age Category")
+
+# Demographic variable width bar chart
+dem_sudan_sum <- dem_sudan %>% 
+  filter(Year == 2016) %>%
+  group_by(Country, Year, dem.age, dem.sex) %>%
+  summarise(number = sum(number))
+
+dem_sudan_sum$binwidth <- recode(dem_sudan_sum$dem.age, "0-4" = 4, "5-11" = 6, "12-17" = 5, "18-59" = 41, "60+" = 20)
+dem_sudan_sum$center <- recode(dem_sudan_sum$dem.age, "0-4" = 2, "5-11" = 8, "12-17" = 14.5, "18-59" = 38.5, "60+" = 70)
+dem_sudan_sum$breaks <- recode(dem_sudan_sum$dem.age, "0-4" = 4, "5-11" = 12, "12-17" = 17, "18-59" = 59, "60+" = 80)
+cats <- c("0-4","0-4","5-11", "5-11","12-17","12-17", "18-59", "18-59", "60+", "60+")
+total <- sum(dem_sudan_sum$number)
+sudan_variable <- ggplot(dem_sudan_sum, aes(x = center, y = number / binwidth, width = binwidth)) +
+  geom_col(color = "lightblue", fill = "lightblue") +
+  scale_x_continuous(labels = cats, breaks = dem_sudan_sum$center) +
+  facet_grid(.~dem.sex) +
+  xlab('Age group') +
+  ylab('Chart Area = population of persons of concern') +
+  ggtitle('Women and their children are disproportionately affected in South Sudan') +
+  theme(#axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+
+grid.arrange(sudan_stack, sudan_fill, sudan_variable)
+```
 
 #### Syria Arab Republic
 
@@ -384,78 +448,101 @@ grid.arrange(syria_stack, syria_fill)
 
 ```
 
-Out of the 5 countries we looked at, South Sudan seemed to have the most complete demographic data, with about 260,000 persons out of 400,000 for which there was demographic data on. As such, it is the only demographic graph we are choosing to include in our executive summary.
-
-#### South Sudan
-```{r fig.height = 10}
-# Cleaning for Sudan
-dem_sudan <- dem_long %>%
-  filter(Country == 'South Sudan') %>% 
-  filter(Year >= 2011 & Year <= 2017) %>%
-  filter(dem.sex %in% c("Female","Male")) %>%
-  group_by(Country, Year, dem.sex, dem.age) %>%
-  summarise(number = sum(number))
-
-# The age 5-17 category was not used in tracking persons of concern from South Sudan
-dem_sudan<-dem_sudan[!(dem_sudan$dem.age =="5-17"),]
-
-# Reordering the factor categories
-dem_sudan$dem.age <- factor(dem_sudan$dem.age, levels = c("0-4", "5-11", "12-17", "18-59", "60+"))
-
-# Demographic bar chart
-sudan_stack <- ggplot(dem_sudan, aes(x = factor(Year), y = number / 1000)) +
-  geom_bar(aes(fill = dem.age),stat = "identity", position = "stack") +
-  facet_wrap(.~dem.sex) +
-  xlab('Year') +
-  ylab('Population (in thousands)') +
-  ggtitle('Demographic breakdown of persons of concern in South Sudan')
-
-# Demographic bar chart
-sudan_fill <- ggplot(dem_sudan, aes(x = factor(Year), y = number / 1000)) +
-  geom_bar(aes(fill = dem.age),stat = "identity", position = "fill") +
-  facet_wrap(.~dem.sex) +
-  xlab('Year') +
-  ylab('Proportion of total population') +
-  ggtitle('Demographic breakdown of persons of concern in South Sudan')
-
-# Demographic variable width bar chart
-dem_sudan_sum <- dem_sudan %>% 
-  filter(Year == 2016) %>%
-  group_by(Country, Year, dem.age, dem.sex) %>%
-  summarise(number = sum(number))
-
-dem_sudan_sum$binwidth <- recode(dem_sudan_sum$dem.age, "0-4" = 4, "5-11" = 6, "12-17" = 5, "18-59" = 41, "60+" = 20)
-dem_sudan_sum$center <- recode(dem_sudan_sum$dem.age, "0-4" = 2, "5-11" = 8, "12-17" = 14.5, "18-59" = 38.5, "60+" = 70)
-dem_sudan_sum$breaks <- recode(dem_sudan_sum$dem.age, "0-4" = 4, "5-11" = 12, "12-17" = 17, "18-59" = 59, "60+" = 80)
-cats <- c("0-4","0-4","5-11", "5-11","12-17","12-17", "18-59", "18-59", "60+", "60+")
-total <- sum(dem_sudan_sum$number)
-sudan_variable <- ggplot(dem_sudan_sum, aes(x = center, y = number / binwidth, width = binwidth)) +
-  geom_col(color = "lightblue", fill = "lightblue") +
-  scale_x_continuous(labels = cats, breaks = dem_sudan_sum$center) +
-  facet_grid(.~dem.sex) +
-  xlab('Age group') +
-  ylab('Chart Area = population of persons of concern') +
-  ggtitle('Women and their children are disproportionately affected in South Sudan') +
-  theme(#axis.title.y=element_blank(),
-        axis.text.y=element_blank(),
-        axis.ticks.y=element_blank())
-
-grid.arrange(sudan_stack, sudan_fill, sudan_variable)
-```
-
-
+As seen from the above chart, there appears to be a sharp dip in the demographic data recorded for Syria from 2011 to 2012, and 2012 to 2013. However, from news sources and the timeseries data, we know that that is not true. First inspection of the data also tells us that the local regions at which data is collected year after year are mostly unique, which probably resulted in a lapse in data quality.
 
 ## 5 Executive Summary 
 
+Our project sought to characterize refugee movement over the past decade. This was implemented by performing exploratory data analysis using the UNHCR data. The database currently contains data about UNHCR's populations of concern from the year 1951 up to 2017, which includes the following 6 categories: Refugees, Asylum Seekers, Internally displaced persons, returned refugees, returned IDPs, stateless persons and others of concern. This data was used to investigate different aspects of these populations: their general composition by location of residence or origin, their status, their numbers over time, and so on.
+
+The primary questions of interest were, Where are refugees mostly originating from and what kind of events occurred to make them leave? Which are the countries taking in the most refugees, and why? Which demographic segments of the population are affected by these crisis? This was executed by subsetting the data into different time periods and exploring the refugee movement for the different countries using time series analysis. 
+
+The key findings from our project are: the top 5 countries with the highest refugee populations, the causes for this displacement of people, and the countries to which these people have resettled. The first and last point has been concisely summarized in our alluvial diagram that represents the flow of refugees from origin country to their country of resettlement.
+
 ``` {r fig.height = 20}
+
 alluvial
+
 ```
+
+The demographics dataset was used to identify the different age groups of refugees from the 5 selected countries. There were obvious gaps in the dataset for the most part, revealing inconsistencies in data collection methods and locations. Out of these 5 countries, the demographic data for South Sudan was the most complete and thus the graph is included below. The first chart shows the demographic breakdown of persons of concern in South Sudan, by absolute value, while the second chart shows the proportion in each demographic category, with the data for all years normalized to the full height of the chart. It reveals a steady increase in absolute numbers for the persons of concern population, while the proportion in each age category remains largely the same. The last graph is a variable width bar chart, in which the chart area represents the total number in that category. This was done since the categories were of different sizes in the demographic data. This last chart reveals the fact that woman and their children are disproportionately affected by the crisis.
 
 
 ``` {r fig.height = 10}
 grid.arrange(sudan_stack, sudan_fill, sudan_variable)
 ```
-## 6 Interactive Component
+
+Our interactive component includes both a map and line chart that summarises the persons of concern population for each origin country and the countries they relocated to. Our main conclusion from that visualization, thanks to the spatial representation of the countries, was that the majority of the persons of concern relocated to neighboring countries. Countries that are neighbors to conflicts and violence are therefore bearing the brunt of the refugee inflow from those events.
+
+# 6 Interactive Component
+
+## 6.1 Design
+
+For our interactive component, we wanted to design a graph that captured the crux of our analysis - the events that led to the current expansion of refugee populations while also tracking their movements around the world.
+
+### 6.1.1 Layout
+
+The interactive component consists of two graphs which are arranged one above the other. The graph on top is a line chart which tracks the refugee population for a particular countries of interest across a period of just over 25 years. The bottom graph is a geographic heat map representing a snapshot of the movement of these populations around the world.
+
+### 6.1.2 Interactivity
+
+The buttons at the top of the chart are used to select the particular country that you wish to view trends for. Selecting the buttons also displays polygons which highlight historical events that explain the existing trends in the data. The default display being that for Syria. Hovering over the line chart area filters the below heat map by year according to the position of the mouse.
+
+## 6.2 Usage Instructions
+
+To maximize the utility of the interative graph, please follow the following instructions. They will also highlight the gaps and probable questions that may arise while using it.
+
+### 6.2.1 Buttons
+
+To change from one country of interest to another, click on the button present on the top of the graph. Clicking these buttons also triggers a highlight from the start date to the end date of events we have recorded during the analysis. Please wait for the initial transition on loading the page to complete before you click a button.
+
+### 6.2.2 Date Filter
+
+We employed a date filter on the geographical heat map to allow the viewing of any desired snapshot of refugee movement within the displayed date range. Hover your mouse over a clear section of the line graph background to filter by the required year. Filters are applied based on the position of the mouse relative to the x-axis of the line graph.
+Note: Hovering over the displayed polygon will not work, you will have to move to a non plotted portion of the graph.
+
+## 6.3 Technical Execution
+
+A mixture of R, D3 and Javascript were employed to execute the interactive visualization.
+
+### 6.3.1 Line Chart
+
+The line chart was executed in D3 by binding the relevant data stored in csv files to the DOM elements to construct the graph. Transitions were applied for a aesthetic movement of the line for different regions.
+
+### 6.3.2 Geographic Heat Map
+
+The maps were plotted in R using the choroplethr packages and subsequently exported to images. Each corresponded to a snapshot of a particular year and country. These were rendered in html using d3 and the interactive components were constructed using a mixture of Javascript and D3.
+
+### 6.3.3 Future Scope
+
+The clarity and aesthetics of this interactive visualization could be enhanced by using available d3 libraries such as topoJSON in order to construct the spatial map representation. There are a much wider range of transitions and perspectives that can be achieved using such a library. 
+
+## 6.4 Link to the visualization
+
+https://tinyurl.com/edav-interactive
 
 ## 7 Conclusion
+Key challenges that we faced throughout the course of this project are:
+
+* Identifying meaningful subsets of data: The data set was widespread from the years of 1950 to 2017 for 230 countries. Spotting meaningful trends in this large dataset was a time consuming task as it required lots of data cleaning and subsetting. 
+
+* Missing data: The demographics data had several missing values and was inconsistent in its parameters. The data was collected at different locations which lead to data redundancy. 
+* Navigating confidential data points: There were several situations where data was being kept confidential in order to protect the individuals.These confidential data points were a hinderence during exploration.
+
+* Extracting mappable coordinates for spatial representations: The countries present in the dataset were not concurrent with the countries used in the Choroplethr function, hence they had to be mapped externally using Excel joins.
+
+Future Directions with this project:
+
+* Using an interactive SVG map components like TopoJSON to represent the dynamic flow of refugees, instead of static representations.
+
+* Analyses of political landscape obstructing refugee flows, most refugees tend to settle in neighbouring countries that are closer to home although those countries are not the best choice for them. There could be some underlying reasons to this behaviour. 
+
+Some valuables lessons learned:
+
+* Data wrangling took up almost 70% of the time and work. It is very important to start this phase much earlier. In order to extract meaningful insights from the data, we need to thoroughly understand what it represents.
+
+* Data consistency/quality is extremely important for exploratory data analysis.
+
+* We have also expanded our geographical knowledge profusely, thanks to the manual mapping of chroplethR Country values!
+
+Thank you for reading!
 
